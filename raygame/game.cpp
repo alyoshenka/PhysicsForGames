@@ -34,7 +34,7 @@ void game::tick()
 		auto& babyPhys = physObjects[physObjects.size() - 1];
 		auto mousePos = GetMousePosition();
 		babyPhys.pos = { mousePos.x, mousePos.y };
-		babyPhys.addForce({ 1000, 0 });
+		babyPhys.addForce({ 0, 3000 });
 	}
 }
 

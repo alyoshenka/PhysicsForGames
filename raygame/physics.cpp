@@ -34,3 +34,20 @@ void physObject::addForce(glm::vec2 force)
 {
 	forces += force * (1.0f / mass);
 }
+
+void physObject::addImpulse(glm::vec2 impulse)
+{
+	vel += impulse * (1.0f / mass);
+}
+
+void physObject::addAcceleration(glm::vec2 accel)
+{
+	// ToDo: implement
+	assert(false);
+}
+
+void physObject::addVelocityChange(glm::vec2 delta)
+{
+	vel += delta;
+}
+
