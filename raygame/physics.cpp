@@ -173,9 +173,9 @@ void collisions::checkCollisions(std::vector<physObject>& objects)
 				} 
 			});
 
-			// if (isCollision) { resolvePhysBodies(i, j); }
+			if (isCollision) { resolvePhysBodies(i, j); }
 		}
 	}
 
-	dealWithCollisions();
+	// dealWithCollisions();
 }

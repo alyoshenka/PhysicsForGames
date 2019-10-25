@@ -22,6 +22,8 @@ int main()
 	{
 		app.tick();
 
+		app.screenWrap();
+
 		while (app.shouldPhysics())
 		{
 			app.tickPhys();

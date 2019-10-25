@@ -80,7 +80,7 @@ void resolvePhysBodies(physObject & lhs, physObject & rhs)
 	rhs.pos -= normal * pen;
 
 	lhs.vel = resImpulses[0];
-	lhs.vel = resImpulses[1];
+	rhs.vel = resImpulses[1];
 }
 
 void resolveCollision(glm::vec2 posA, glm::vec2 velA, float massA, 

@@ -8,6 +8,9 @@ class game
 {
 	float accumulatedFixedTime;
 
+	int screenWidth;
+	int screenHeight;
+
 	std::vector<physObject> physObjects;
 	collisions collisionData;
 
@@ -19,6 +22,7 @@ public:
 	void tickPhys();
 	void draw() const; // const so it doesn't modify state
 	void exit();
+	void screenWrap();
 
 	bool shouldClose() const;
 	bool shouldPhysics() const;

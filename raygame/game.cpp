@@ -9,15 +9,15 @@ game::game()
 {
 	targetFixedStep = 1.0f / 30.0f; // target physics tick rate
 	accumulatedFixedTime = 0.0f;
+
+	screenWidth = 800;
+	screenHeight = 450;
 }
 
 void game::init()
 {
 	// Initialization
 	//--------------------------------------------------------------------------------------
-	int screenWidth = 800;
-	int screenHeight = 450;
-
 	InitWindow(screenWidth, screenHeight, "raylib [core] example - basic window");
 
 	SetTargetFPS(60);
@@ -40,11 +40,11 @@ void game::tick()
 		auto& babyPhys = physObjects[physObjects.size() - 1];
 		auto mousePos = GetMousePosition();
 		babyPhys.pos = { mousePos.x, mousePos.y };
-		babyPhys.addForce({ 0, 3000 });
+		// babyPhys.addForce({ 0, 3000 });
 
 		if (mb0) 
 		{ 
-			babyPhys.collider = circle{ 15.0f };
+			babyPhys.collider = circle{ 20.0f };
 		}
 		else 
 		{ 
@@ -89,6 +89,17 @@ void game::exit()
 	CloseWindow();        // Close window and OpenGL context
 	//--------------------------------------------------------------------------------------
 
+}
+
+void game::screenWrap()
+{
+	for (auto& i : physObjects)
+	{
+		if (i.pos.x > screenWidth) { i.pos.x = 0; }
+		if (i.pos.x < 0) { i.pos.x = screenWidth; }
+		if (i.pos.y > screenHeight) { i.pos.y = 0; }
+		if (i.pos.y < 0) { i.pos.y = screenHeight; }
+	}
 }
 
 bool game::shouldClose() const
