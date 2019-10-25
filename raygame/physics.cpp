@@ -22,7 +22,7 @@ physObject::physObject()
 	forces = { 0, 0 };
 
 	mass = 1.0f;
-	drag = 1.0f;
+	drag = 0.5f;
 }
 
 void physObject::tickPhys(float delta)
@@ -53,8 +53,7 @@ void physObject::addImpulse(glm::vec2 impulse)
 
 void physObject::addAcceleration(glm::vec2 accel)
 {
-	// ToDo: implement
-	assert(false);
+	forces += accel;
 }
 
 void physObject::addVelocityChange(glm::vec2 delta)
@@ -63,6 +62,8 @@ void physObject::addVelocityChange(glm::vec2 delta)
 }
 
 #include <iostream>
+
+// new collisions should be added to a separate array, then dealt with
 
 void collisions::dealWithCollisions()
 {
@@ -132,7 +133,7 @@ collisions::collisions()
 	currCollisions = new std::vector<collision>();
 }
 
-void collisions::checkCollisions(const std::vector<physObject> objects)
+void collisions::checkCollisions(std::vector<physObject>& objects)
 {
 	std::vector<collision>* hold;
 	hold = prevCollisions;
@@ -147,23 +148,29 @@ void collisions::checkCollisions(const std::vector<physObject> objects)
 		{
 			if (&i == &j) { continue; } // skip self
 
+			bool isCollision = false;
+
 			i.collider.match(
-			[i, j, this](circle c) 
+			[i, j, this, &isCollision](circle c)
 			{ 
 				if (checkCircleX(i.pos, c, j.pos, j.collider))
 				{ 
-					currCollisions->push_back({ i, j });
-					// std::cout << "collision" << std::endl;
+					// currCollisions->push_back({ i, j });
+					std::cout << "collision" << std::endl;
+					isCollision = true;
 				} 
 			},
-			[i, j, this](aabb c) 
+			[i, j, this, &isCollision](aabb c) 
 			{ 
 				if (checkAABBX(i.pos, c, j.pos, j.collider)) 
 				{ 
-					currCollisions->push_back({ i, j });
-					// std::cout << "collision" << std::endl;
+					// currCollisions->push_back({ i, j });
+					std::cout << "collision" << std::endl;
+					isCollision = true;
 				} 
 			});
+
+			if (isCollision) { resolvePhysBodies(i, j); }
 		}
 	}
 

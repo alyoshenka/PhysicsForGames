@@ -57,7 +57,7 @@ public:
 
 	std::vector<collision>* currCollisions;
 
-	void checkCollisions(const std::vector<physObject> objects);
+	void checkCollisions(std::vector<physObject>& objects);
 };
 
 struct collision
