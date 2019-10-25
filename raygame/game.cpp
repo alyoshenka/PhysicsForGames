@@ -1,6 +1,8 @@
 #include "game.h"
 #include "raylib.h"
 
+#include "mapbox/variant.hpp"
+
 #include <iostream>
 
 game::game()
@@ -26,7 +28,11 @@ void game::tick()
 {
 	accumulatedFixedTime += GetFrameTime();
 
-	if (IsMouseButtonPressed(0))
+	bool mb0 = IsMouseButtonPressed(0);
+	bool mb1 = IsMouseButtonPressed(1);
+
+
+	if (mb0 || mb1)
 	{
 		physObjects.emplace_back();
 		std::cout << "Added a physics object" << std::endl;
@@ -35,6 +41,15 @@ void game::tick()
 		auto mousePos = GetMousePosition();
 		babyPhys.pos = { mousePos.x, mousePos.y };
 		babyPhys.addForce({ 0, 3000 });
+
+		if (mb0) 
+		{ 
+			babyPhys.collider = circle{ 15.0f };
+		}
+		else 
+		{ 
+			babyPhys.collider = aabb{ {15.0f, 15.0f} }; 
+		}
 	}
 }
 
@@ -46,6 +61,8 @@ void game::tickPhys()
 	{
 		i.tickPhys(targetFixedStep);
 	}
+
+	collisionData.checkCollisions(physObjects);
 }
 
 void game::draw() const

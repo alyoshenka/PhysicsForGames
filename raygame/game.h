@@ -9,6 +9,7 @@ class game
 	float accumulatedFixedTime;
 
 	std::vector<physObject> physObjects;
+	collisions collisionData;
 
 public:
 	game();

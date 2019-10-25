@@ -1,9 +1,18 @@
 #pragma once
 
 #include "glm/vec2.hpp"
+#include "shapes.h"
+
+#include <vector>
+
+struct collision;
+class collisions;
 
 class physObject
 {
+	// update the physics forces on the object
+	void updateForces(float delta);
+
 public:
 	glm::vec2 pos;
 	glm::vec2 vel;
@@ -15,7 +24,11 @@ public:
 	float mass;
 	float drag;
 
+	shape collider;
+
 	void tickPhys(float delta);
+
+	void drawCollider() const;
 	void draw() const;
 
 	// add continuous force with respect to mass
@@ -26,4 +39,29 @@ public:
 	void addAcceleration(glm::vec2 accel);
 	// adds an instantateous force without respect to mass
 	void addVelocityChange(glm::vec2 delta);
+
+	void onCollisionEnter(physObject collision);
+	void onCollisionStay(physObject collision);
+	void onCollisionExit(physObject collision);
+};
+
+class collisions
+{
+	std::vector<collision>* prevCollisions;
+	
+	void dealWithCollisions();
+
+public:
+
+	collisions();
+
+	std::vector<collision>* currCollisions;
+
+	void checkCollisions(const std::vector<physObject> objects);
+};
+
+struct collision
+{
+	physObject a;
+	physObject b;
 };
