@@ -141,6 +141,9 @@ void collisions::checkCollisions(std::vector<physObject>& objects)
 	currCollisions = hold;
 	currCollisions->clear();
 
+	assert(currCollisions->size() == 0);
+	assert(&currCollisions != &prevCollisions);
+
 	// add all new collisions to currCollisions
 	for (auto& i : objects)
 	{
@@ -155,8 +158,8 @@ void collisions::checkCollisions(std::vector<physObject>& objects)
 			{ 
 				if (checkCircleX(i.pos, c, j.pos, j.collider))
 				{ 
-					// currCollisions->push_back({ i, j });
-					std::cout << "collision" << std::endl;
+					currCollisions->push_back({ i, j });
+					// std::cout << "collision" << std::endl;
 					isCollision = true;
 				} 
 			},
@@ -164,13 +167,13 @@ void collisions::checkCollisions(std::vector<physObject>& objects)
 			{ 
 				if (checkAABBX(i.pos, c, j.pos, j.collider)) 
 				{ 
-					// currCollisions->push_back({ i, j });
-					std::cout << "collision" << std::endl;
+					currCollisions->push_back({ i, j });
+					// std::cout << "collision" << std::endl;
 					isCollision = true;
 				} 
 			});
 
-			if (isCollision) { resolvePhysBodies(i, j); }
+			// if (isCollision) { resolvePhysBodies(i, j); }
 		}
 	}
 
