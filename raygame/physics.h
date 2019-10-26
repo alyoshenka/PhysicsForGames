@@ -4,6 +4,7 @@
 #include "shapes.h"
 
 #include <vector>
+#include <string>
 
 struct collision;
 class collisions;
@@ -25,6 +26,7 @@ public:
 	float drag;
 
 	shape collider;
+	std::string name;
 
 	void tickPhys(float delta);
 
@@ -49,7 +51,7 @@ class collisions
 {
 	std::vector<collision>* prevCollisions;
 	
-	void dealWithCollisions();
+	void dealWithCollisions() const;
 
 public:
 
@@ -64,4 +66,6 @@ struct collision
 {
 	physObject a;
 	physObject b;
+
+	bool operator==(const collision& rhs);
 };

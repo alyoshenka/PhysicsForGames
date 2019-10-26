@@ -40,7 +40,8 @@ void game::tick()
 		auto& babyPhys = physObjects[physObjects.size() - 1];
 		auto mousePos = GetMousePosition();
 		babyPhys.pos = { mousePos.x, mousePos.y };
-		// babyPhys.addForce({ 0, 3000 });
+		babyPhys.addForce({ 0, 5000 });
+		babyPhys.name = std::to_string(physObjects.size());
 
 		if (mb0) 
 		{ 

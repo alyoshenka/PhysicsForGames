@@ -22,7 +22,9 @@ physObject::physObject()
 	forces = { 0, 0 };
 
 	mass = 1.0f;
-	drag = 0.5f;
+	drag = 1.0f;
+
+	name = "none";
 }
 
 void physObject::tickPhys(float delta)
@@ -65,7 +67,7 @@ void physObject::addVelocityChange(glm::vec2 delta)
 
 // new collisions should be added to a separate array, then dealt with
 
-void collisions::dealWithCollisions()
+void collisions::dealWithCollisions() const
 {
 	// if collision in newCol and not oldCol: onCollisionEnter
 	// if collision in oldCol and newCol: onCollisionStay
@@ -82,10 +84,11 @@ void collisions::dealWithCollisions()
 		bool newInOld = false;
 		for (int j = 0; j < currCollisions->size(); j++) 
 		{			
-			if (&(prevCollisions[i]) == &(currCollisions[j]))
+			if (prevCollisions->at(i) == currCollisions->at(j))
 			{
 				aveCollisions.push_back(i);
 				newInOld = true;
+				// std::cout << "new in old" << std::endl;
 			}
 		}
 
@@ -101,9 +104,10 @@ void collisions::dealWithCollisions()
 		bool oldInNew = false;
 		for (int j = 0; j < prevCollisions->size(); j++)
 		{
-			if (&(prevCollisions[i]) == &(currCollisions[j]))
+			if (currCollisions->at(i) == prevCollisions->at(j))
 			{
 				oldInNew = true;
+				// std::cout << "old in new" << std::endl;
 			}
 		}
 
@@ -113,17 +117,19 @@ void collisions::dealWithCollisions()
 		}
 	}
 
+	// WHY IS THIS BACKWARDS
+
 	// debug collisions
 	// old
 	for (int i = 0; i < oldCollisions.size(); i++)
 	{
-		std::cout << "collision exit" << std::endl;
+		std::cout << "exit at " << currCollisions->at(oldCollisions[i]).a.name << " and " << currCollisions->at(oldCollisions[i]).b.name << std::endl;
 	}
 
 	// new
 	for (int i = 0; i < newCollisions.size(); i++)
 	{
-		std::cout << "collision enter" << std::endl;
+		std::cout << "enter at " << prevCollisions->at(newCollisions[i]).a.name << " and " << prevCollisions->at(newCollisions[i]).b.name << std::endl;
 	}
 }
 
@@ -172,10 +178,14 @@ void collisions::checkCollisions(std::vector<physObject>& objects)
 					isCollision = true;
 				} 
 			});
-
-			if (isCollision) { resolvePhysBodies(i, j); }
+			// if (isCollision) { resolvePhysBodies(i, j); }
 		}
 	}
 
-	// dealWithCollisions();
+	dealWithCollisions();
+}
+
+bool collision::operator==(const collision & rhs)
+{
+	return a.name.compare(rhs.a.name) && b.name.compare(rhs.b.name); // change this
 }
