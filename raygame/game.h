@@ -12,7 +12,6 @@ class game
 	int screenHeight;
 
 	std::vector<physObject> physObjects;
-	collisions collisionData;
 
 public:
 	game();

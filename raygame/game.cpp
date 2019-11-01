@@ -35,13 +35,14 @@ void game::tick()
 	if (mb0 || mb1)
 	{
 		physObjects.emplace_back();
-		std::cout << "Added a physics object" << std::endl;
 
 		auto& babyPhys = physObjects[physObjects.size() - 1];
 		auto mousePos = GetMousePosition();
 		babyPhys.pos = { mousePos.x, mousePos.y };
 		babyPhys.addForce({ 0, 5000 });
 		babyPhys.name = std::to_string(physObjects.size());
+		std::cout << "Added physics object " << babyPhys.name << std::endl;
+		assert(!babyPhys.getIsTrigger());
 
 		if (mb0) 
 		{ 
@@ -63,7 +64,16 @@ void game::tickPhys()
 		i.tickPhys(targetFixedStep);
 	}
 
-	collisionData.checkCollisions(physObjects);
+	checkCollisions(physObjects);
+	resolveCollisions(physObjects);
+
+	for (physObject ob : physObjects)
+	{
+		ob.swapCollisionLists();
+
+		assert(ob.collidingObjects->size() == 0);
+		assert(!ob.getIsTrigger());
+	}
 }
 
 void game::draw() const

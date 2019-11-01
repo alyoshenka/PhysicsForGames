@@ -6,11 +6,22 @@
 #include <vector>
 #include <string>
 
+class collisionHandler;
+
 struct collision;
-class collisions;
+
+enum Flag
+{
+	undetermined,
+	enter,
+	stay,
+	exitStage
+};
 
 class physObject
 {
+	bool isTrigger;
+
 	// update the physics forces on the object
 	void updateForces(float delta);
 
@@ -21,12 +32,15 @@ public:
 	glm::vec2 forces;
 
 	physObject();
+	physObject(bool setAsTrigger);
 
 	float mass;
 	float drag;
 
 	shape collider;
 	std::string name;
+	std::vector<physObject*> *prevCollidingObjects;
+	std::vector<physObject*> *collidingObjects;
 
 	void tickPhys(float delta);
 
@@ -45,27 +59,25 @@ public:
 	void onCollisionEnter(physObject collision);
 	void onCollisionStay(physObject collision);
 	void onCollisionExit(physObject collision);
+
+	void onTriggerEnter(physObject trigger);
+	void onTriggerStay(physObject trigger);
+	void onTriggerExit(physObject trigger);
+
+	bool getIsTrigger(); // returns isTrigger
+	// swaps current collision list into previous collision list
+	void swapCollisionLists();
 };
 
-class collisions
-{
-	std::vector<collision>* prevCollisions;
-	
-	void dealWithCollisions() const;
-
-public:
-
-	collisions();
-
-	std::vector<collision>* currCollisions;
-
-	void checkCollisions(std::vector<physObject>& objects);
-};
-
+// collision only works one way
 struct collision
 {
-	physObject a;
-	physObject b;
-
-	bool operator==(const collision& rhs);
+	Flag stage;
+	physObject *subject;
+	physObject *object;
 };
+
+void checkCollisions(std::vector<physObject>& objects);
+
+void resolveCollisions(std::vector<physObject>& objects);
+

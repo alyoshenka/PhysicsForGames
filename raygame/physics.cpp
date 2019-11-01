@@ -2,6 +2,8 @@
 
 #include "raylib.h"
 
+#include <iostream>
+
 void physObject::updateForces(float delta)
 {
 	// integrate forces into velocity
@@ -25,6 +27,16 @@ physObject::physObject()
 	drag = 1.0f;
 
 	name = "none";
+
+	isTrigger = false;
+
+	collidingObjects = new std::vector<physObject*>();
+	prevCollidingObjects = new std::vector<physObject*>();
+}
+
+physObject::physObject(bool setAsTrigger) : physObject()
+{
+	isTrigger = setAsTrigger;
 }
 
 void physObject::tickPhys(float delta)
@@ -42,6 +54,8 @@ void physObject::draw() const
 {
 	drawCollider();
 }
+
+#pragma region ForceManipulation
 
 void physObject::addForce(glm::vec2 force)
 {
@@ -63,129 +77,192 @@ void physObject::addVelocityChange(glm::vec2 delta)
 	vel += delta;
 }
 
-#include <iostream>
+#pragma endregion ForceManipulation
 
-// new collisions should be added to a separate array, then dealt with
+#pragma region InteractionEvents
 
-void collisions::dealWithCollisions() const
+void physObject::onCollisionEnter(physObject collision)
 {
+	std::cout << "collision enter on " << name << std::endl;
+}
+
+void physObject::onCollisionStay(physObject collision)
+{
+	std::cout << "collision stay on " << name << std::endl;
+}
+
+void physObject::onCollisionExit(physObject collision)
+{
+	std::cout << "collision exit on " << name << std::endl;
+}
+
+void physObject::onTriggerEnter(physObject trigger)
+{
+	std::cout << "trigger enter on " << name << std::endl;
+}
+
+void physObject::onTriggerStay(physObject trigger)
+{
+	std::cout << "trigger stay on " << name << std::endl;
+}
+
+void physObject::onTriggerExit(physObject trigger)
+{
+	std::cout << "trigger exit on " << name << std::endl;
+}
+
+#pragma endregion InteractionEvents
+
+bool physObject::getIsTrigger()
+{
+	return isTrigger;
+}
+
+void physObject::swapCollisionLists()
+{
+	std::vector<physObject*> *temp = prevCollidingObjects;
+	prevCollidingObjects = collidingObjects;
+	collidingObjects = temp;
+	collidingObjects->clear();
+	assert(&collidingObjects != &prevCollidingObjects);
+	assert(&temp != &prevCollidingObjects);
+	assert(collidingObjects->size() == 0);
+}
+
+void checkCollisions(std::vector<physObject>& objects)
+{
+	physObject *iObj;
+	physObject *jObj;
+
+	// add all new collisions to currCollisions
+	for (int i = 0; i < objects.size(); i++)
+	{
+		for (int j = 0; j < objects.size(); j++)
+		{
+			iObj = &(objects.at(i));
+			jObj = &(objects.at(j));
+
+			if (iObj == jObj) { continue; } // skip self
+
+			iObj->collider.match(
+				[iObj, jObj](circle c)
+			{
+				if (checkCircleX(iObj->pos, c, jObj->pos, jObj->collider))
+				{
+					iObj->collidingObjects->push_back(jObj);
+					jObj->collidingObjects->push_back(iObj);
+				}
+			},
+				[iObj, jObj](aabb c)
+			{
+				if (checkAABBX(iObj->pos, c, jObj->pos, jObj->collider))
+				{
+					iObj->collidingObjects->push_back(jObj);
+					jObj->collidingObjects->push_back(iObj);
+				}
+			});
+		}
+	}
+}
+
+void resolveCollisions(std::vector<physObject>& objects)
+{
+	// ontriggerenter/exit only gets called when the object
+	// starts/stops colliding with *anything*, not just any
+	// one object
+
+	// the reason this isn't working is that i am checking for collision
+	// with anything, not just the object
+
+	// to solve I could have each object have a list of collisions and update it 
+	// every frame
+
 	// if collision in newCol and not oldCol: onCollisionEnter
 	// if collision in oldCol and newCol: onCollisionStay
 	// if collision in oldCol and not newCol: onCollisionExit
 
-	// THIS IS NOT PERFORMANT
-	std::vector<int> newCollisions;
-	std::vector<int> aveCollisions;
-	std::vector<int> oldCollisions;
+	std::vector<collision> collisions;
 
-	// check for collisions that stayed or are new
-	for (int i = 0; i < prevCollisions->size(); i++)
+	// sort collisions
+	physObject object;
+	for (int i = 0; i < objects.size(); i++)
 	{
-		bool newInOld = false;
-		for (int j = 0; j < currCollisions->size(); j++) 
-		{			
-			if (prevCollisions->at(i) == currCollisions->at(j))
+		object = objects.at(i);
+
+		// sort collisions
+
+		// stay, exit
+		for (int j = 0; j < object.prevCollidingObjects->size(); j++)
+		{
+			physObject* jObj = object.prevCollidingObjects->at(j);
+			collision col = { undetermined, &object, jObj };
+			bool prevInCur = false;
+			for (int k = 0; k < object.collidingObjects->size(); k++)
 			{
-				aveCollisions.push_back(i);
-				newInOld = true;
-				// std::cout << "new in old" << std::endl;
+				physObject* kObj = object.collidingObjects->at(k);
+				if (jObj->name.compare(kObj->name)) 
+				{
+					prevInCur = true;
+					break;
+				}
+			}
+			col.stage = prevInCur ? stay : exitStage;
+			assert(!jObj->name.compare("none"));
+			collisions.push_back(col);
+			std::cout << col.object->name << std::endl;
+		}
+
+		// enter
+		for (int j = 0; j < object.collidingObjects->size(); j++)
+		{
+			physObject* jObj = object.collidingObjects->at(j);
+			collision col = { undetermined, &object, jObj };
+			bool curInPrev = false;
+			for (int k = 0; k < object.prevCollidingObjects->size(); k++)
+			{
+				physObject* kObj = object.prevCollidingObjects->at(k);
+				if (&jObj == &kObj)
+				{
+					curInPrev = true;
+					break;
+				}
+			}
+			if(!curInPrev)
+			{
+				col.stage = enter;
+				std::cout << col.object->name << std::endl;
+				assert(jObj->name.compare("none") != 0);
+				assert(col.object->name.compare("none") != 0);
+				collisions.push_back(col);
 			}
 		}
+	}	
 
-		if (!newInOld)
-		{
-			newCollisions.push_back(i);
-		}
-	}
+	std::cout << collisions.size() << std::endl;
 
-	// check for collisions that are old
-	for (int i = 0; i < currCollisions->size(); i++)
+	for (collision c : collisions)
 	{
-		bool oldInNew = false;
-		for (int j = 0; j < prevCollisions->size(); j++)
+		bool isTrigger = c.subject->getIsTrigger() || c.object->getIsTrigger();
+		switch (c.stage)
 		{
-			if (currCollisions->at(i) == prevCollisions->at(j))
-			{
-				oldInNew = true;
-				// std::cout << "old in new" << std::endl;
-			}
+		case enter:	
+			// if (isTrigger) { c.subject->onTriggerEnter(c.object); }
+			// else { c.subject->onCollisionEnter(c.object); }
+			break;
+		case stay:
+			if (isTrigger) { c.subject->onTriggerStay(c.object); }
+			else { c.subject->onCollisionStay(c.object); }
+			break;
+		case exitStage:
+			if (isTrigger) { c.subject->onTriggerExit(c.object); }
+			else { c.subject->onCollisionExit(c.object); }
+			break;
+		default:
+			assert(false);
+			break;
 		}
-
-		if (!oldInNew)
-		{
-			oldCollisions.push_back(i);
-		}
-	}
-
-	// WHY IS THIS BACKWARDS
-
-	// debug collisions
-	// old
-	for (int i = 0; i < oldCollisions.size(); i++)
-	{
-		std::cout << "exit at " << currCollisions->at(oldCollisions[i]).a.name << " and " << currCollisions->at(oldCollisions[i]).b.name << std::endl;
-	}
-
-	// new
-	for (int i = 0; i < newCollisions.size(); i++)
-	{
-		std::cout << "enter at " << prevCollisions->at(newCollisions[i]).a.name << " and " << prevCollisions->at(newCollisions[i]).b.name << std::endl;
 	}
 }
 
-collisions::collisions()
-{
-	prevCollisions = new std::vector<collision>();
-	currCollisions = new std::vector<collision>();
-}
 
-void collisions::checkCollisions(std::vector<physObject>& objects)
-{
-	std::vector<collision>* hold;
-	hold = prevCollisions;
-	prevCollisions = currCollisions;
-	currCollisions = hold;
-	currCollisions->clear();
 
-	assert(currCollisions->size() == 0);
-	assert(&currCollisions != &prevCollisions);
-
-	// add all new collisions to currCollisions
-	for (auto& i : objects)
-	{
-		for (auto& j : objects)
-		{
-			if (&i == &j) { continue; } // skip self
-
-			bool isCollision = false;
-
-			i.collider.match(
-			[i, j, this, &isCollision](circle c)
-			{ 
-				if (checkCircleX(i.pos, c, j.pos, j.collider))
-				{ 
-					currCollisions->push_back({ i, j });
-					// std::cout << "collision" << std::endl;
-					isCollision = true;
-				} 
-			},
-			[i, j, this, &isCollision](aabb c) 
-			{ 
-				if (checkAABBX(i.pos, c, j.pos, j.collider)) 
-				{ 
-					currCollisions->push_back({ i, j });
-					// std::cout << "collision" << std::endl;
-					isCollision = true;
-				} 
-			});
-			// if (isCollision) { resolvePhysBodies(i, j); }
-		}
-	}
-
-	dealWithCollisions();
-}
-
-bool collision::operator==(const collision & rhs)
-{
-	return a.name.compare(rhs.a.name) && b.name.compare(rhs.b.name); // change this
-}
