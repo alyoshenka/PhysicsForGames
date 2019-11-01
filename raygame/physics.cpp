@@ -29,14 +29,16 @@ physObject::physObject()
 	name = "none";
 
 	isTrigger = false;
+	id = -1;
 
 	collidingObjects = new std::vector<physObject*>();
 	prevCollidingObjects = new std::vector<physObject*>();
 }
 
-physObject::physObject(bool setAsTrigger) : physObject()
+physObject::physObject(bool setAsTrigger, int initID) : physObject()
 {
 	isTrigger = setAsTrigger;
+	id = initID;
 }
 
 void physObject::tickPhys(float delta)
@@ -83,32 +85,32 @@ void physObject::addVelocityChange(glm::vec2 delta)
 
 void physObject::onCollisionEnter(physObject collision)
 {
-	std::cout << "collision enter on " << name << std::endl;
+	std::cout << "collision enter on " << name << " by " << collision.name << std::endl;
 }
 
 void physObject::onCollisionStay(physObject collision)
 {
-	std::cout << "collision stay on " << name << std::endl;
+	std::cout << "collision stay on " << name << " by " << collision.name << std::endl;
 }
 
 void physObject::onCollisionExit(physObject collision)
 {
-	std::cout << "collision exit on " << name << std::endl;
+	std::cout << "collision exit on " << name << " by " << collision.name << std::endl;
 }
 
 void physObject::onTriggerEnter(physObject trigger)
 {
-	std::cout << "trigger enter on " << name << std::endl;
+	std::cout << "trigger enter on " << name << " by " << trigger.name << std::endl;
 }
 
 void physObject::onTriggerStay(physObject trigger)
 {
-	std::cout << "trigger stay on " << name << std::endl;
+	std::cout << "trigger stay on " << name << " by " << trigger.name << std::endl;
 }
 
 void physObject::onTriggerExit(physObject trigger)
 {
-	std::cout << "trigger exit on " << name << std::endl;
+	std::cout << "trigger exit on " << name << " by " << trigger.name << std::endl;
 }
 
 #pragma endregion InteractionEvents
@@ -120,13 +122,22 @@ bool physObject::getIsTrigger()
 
 void physObject::swapCollisionLists()
 {
-	std::vector<physObject*> *temp = prevCollidingObjects;
-	prevCollidingObjects = collidingObjects;
-	collidingObjects = temp;
+	prevCollidingObjects->clear();
+	for (int i = 0; i < collidingObjects->size(); i++)
+	{
+		prevCollidingObjects->push_back(collidingObjects->at(i));
+	}
 	collidingObjects->clear();
-	assert(&collidingObjects != &prevCollidingObjects);
-	assert(&temp != &prevCollidingObjects);
-	assert(collidingObjects->size() == 0);
+}
+
+int physObject::getID()
+{
+	return id;
+}
+
+bool physObject::operator==(physObject & rhs) const
+{
+	return id == rhs.getID();
 }
 
 void checkCollisions(std::vector<physObject>& objects)
@@ -142,7 +153,7 @@ void checkCollisions(std::vector<physObject>& objects)
 			iObj = &(objects.at(i));
 			jObj = &(objects.at(j));
 
-			if (iObj == jObj) { continue; } // skip self
+			if (iObj->name.compare(jObj->name) == 0) { continue; } // skip self
 
 			iObj->collider.match(
 				[iObj, jObj](circle c)
@@ -194,68 +205,65 @@ void resolveCollisions(std::vector<physObject>& objects)
 		// stay, exit
 		for (int j = 0; j < object.prevCollidingObjects->size(); j++)
 		{
-			physObject* jObj = object.prevCollidingObjects->at(j);
-			collision col = { undetermined, &object, jObj };
+			physObject *jObj = object.prevCollidingObjects->at(j);
+			physObject *kObj = nullptr;
 			bool prevInCur = false;
 			for (int k = 0; k < object.collidingObjects->size(); k++)
 			{
-				physObject* kObj = object.collidingObjects->at(k);
-				if (jObj->name.compare(kObj->name)) 
+				kObj = object.collidingObjects->at(k);
+				if (jObj == kObj) 
 				{
 					prevInCur = true;
+					assert(nullptr != kObj);
+					// object.prevCollidingObjects->erase(object.prevCollidingObjects->begin() + k);
 					break;
 				}
 			}
-			col.stage = prevInCur ? stay : exitStage;
-			assert(!jObj->name.compare("none"));
-			collisions.push_back(col);
-			std::cout << col.object->name << std::endl;
+			collisions.push_back(collision(prevInCur ? stay : exitStage, jObj, kObj));
 		}
 
 		// enter
 		for (int j = 0; j < object.collidingObjects->size(); j++)
 		{
-			physObject* jObj = object.collidingObjects->at(j);
-			collision col = { undetermined, &object, jObj };
+			physObject *jObj = object.collidingObjects->at(j);
+			physObject *kObj = nullptr;
 			bool curInPrev = false;
 			for (int k = 0; k < object.prevCollidingObjects->size(); k++)
 			{
-				physObject* kObj = object.prevCollidingObjects->at(k);
-				if (&jObj == &kObj)
+				kObj = object.prevCollidingObjects->at(k);
+				if (jObj == kObj)
 				{
 					curInPrev = true;
 					break;
 				}
 			}
-			if(!curInPrev)
+			if (!curInPrev && nullptr != kObj);
 			{
-				col.stage = enter;
-				std::cout << col.object->name << std::endl;
-				assert(jObj->name.compare("none") != 0);
-				assert(col.object->name.compare("none") != 0);
-				collisions.push_back(col);
+				
+				collisions.push_back(collision(enter, jObj, kObj));
+				std::cout << collisions.at(collisions.size() - 1).object->name << std::endl;
 			}
 		}
 	}	
 
-	std::cout << collisions.size() << std::endl;
-
 	for (collision c : collisions)
 	{
+		std::cout << c.subject->name << ", " << c.object->name << std::endl;
+		return;
 		bool isTrigger = c.subject->getIsTrigger() || c.object->getIsTrigger();
 		switch (c.stage)
 		{
 		case enter:	
-			// if (isTrigger) { c.subject->onTriggerEnter(c.object); }
-			// else { c.subject->onCollisionEnter(c.object); }
+			if (isTrigger) { c.subject->onTriggerEnter(*c.object); }
+			else { c.subject->onCollisionEnter(*c.object); }
 			break;
 		case stay:
-			if (isTrigger) { c.subject->onTriggerStay(c.object); }
-			else { c.subject->onCollisionStay(c.object); }
+			if (isTrigger) { c.subject->onTriggerStay(*c.object); }
+			else { c.subject->onCollisionStay(*c.object); }
 			break;
 		case exitStage:
-			if (isTrigger) { c.subject->onTriggerExit(c.object); }
-			else { c.subject->onCollisionExit(c.object); }
+			if (isTrigger) { c.subject->onTriggerExit(*c.object); }
+			else { c.subject->onCollisionExit(*c.object); }
 			break;
 		default:
 			assert(false);
@@ -264,5 +272,9 @@ void resolveCollisions(std::vector<physObject>& objects)
 	}
 }
 
-
-
+collision::collision(Flag _t, physObject * _s, physObject * _o)
+{
+	stage = _t;
+	subject = _s;
+	object = _o;
+}

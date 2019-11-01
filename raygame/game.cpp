@@ -12,6 +12,9 @@ game::game()
 
 	screenWidth = 800;
 	screenHeight = 450;
+
+	clickReset = 0.1f;
+	clickElapsed = clickReset;
 }
 
 void game::init()
@@ -27,22 +30,24 @@ void game::init()
 void game::tick()
 {
 	accumulatedFixedTime += GetFrameTime();
+	clickElapsed += GetFrameTime();
 
-	bool mb0 = IsMouseButtonPressed(0);
-	bool mb1 = IsMouseButtonPressed(1);
+	bool mb0 = IsMouseButtonDown(0);
+	bool mb1 = IsMouseButtonDown(1);
 
 
-	if (mb0 || mb1)
+	if ((mb0 || mb1) && clickElapsed > clickReset)
 	{
-		physObjects.emplace_back();
+		clickElapsed = 0.0f;
 
-		auto& babyPhys = physObjects[physObjects.size() - 1];
+		physObject babyPhys = physObject(false, physObjects.size() + 1);
 		auto mousePos = GetMousePosition();
 		babyPhys.pos = { mousePos.x, mousePos.y };
 		babyPhys.addForce({ 0, 5000 });
-		babyPhys.name = std::to_string(physObjects.size());
+		babyPhys.name = std::to_string(physObjects.size() + 1);
+		babyPhys.collider = circle({ 20 });
+		physObjects.push_back(babyPhys);
 		std::cout << "Added physics object " << babyPhys.name << std::endl;
-		assert(!babyPhys.getIsTrigger());
 
 		if (mb0) 
 		{ 
@@ -72,7 +77,6 @@ void game::tickPhys()
 		ob.swapCollisionLists();
 
 		assert(ob.collidingObjects->size() == 0);
-		assert(!ob.getIsTrigger());
 	}
 }
 
@@ -84,7 +88,7 @@ void game::draw() const
 
 	ClearBackground(RAYWHITE);
 
-	for (const auto& i : physObjects)
+	for (const physObject i : physObjects)
 	{
 		i.draw();
 	}

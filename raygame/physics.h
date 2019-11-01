@@ -21,6 +21,7 @@ enum Flag
 class physObject
 {
 	bool isTrigger;
+	int id;
 
 	// update the physics forces on the object
 	void updateForces(float delta);
@@ -32,7 +33,7 @@ public:
 	glm::vec2 forces;
 
 	physObject();
-	physObject(bool setAsTrigger);
+	physObject(bool setAsTrigger, int initID);
 
 	float mass;
 	float drag;
@@ -67,14 +68,19 @@ public:
 	bool getIsTrigger(); // returns isTrigger
 	// swaps current collision list into previous collision list
 	void swapCollisionLists();
+	int getID();
+
+	bool operator ==(physObject &rhs) const;
 };
 
 // collision only works one way
-struct collision
+class collision
 {
+public:
 	Flag stage;
 	physObject *subject;
 	physObject *object;
+	collision(Flag _t, physObject *_s, physObject *_o);
 };
 
 void checkCollisions(std::vector<physObject>& objects);

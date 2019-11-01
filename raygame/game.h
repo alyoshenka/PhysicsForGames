@@ -11,6 +11,9 @@ class game
 	int screenWidth;
 	int screenHeight;
 
+	float clickReset;
+	float clickElapsed;
+
 	std::vector<physObject> physObjects;
 
 public:
