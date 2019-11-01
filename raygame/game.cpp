@@ -40,18 +40,19 @@ void game::tick()
 	{
 		clickElapsed = 0.0f;
 
-		physObject babyPhys = physObject(false, physObjects.size() + 1);
+		// physObject babyPhys = physObject(false, physObjects.size() + 1);
+		physObject babyPhys;
 		auto mousePos = GetMousePosition();
 		babyPhys.pos = { mousePos.x, mousePos.y };
 		babyPhys.addForce({ 0, 5000 });
 		babyPhys.name = std::to_string(physObjects.size() + 1);
-		babyPhys.collider = circle({ 20 });
+		babyPhys.collider = circle({ 50 });
 		physObjects.push_back(babyPhys);
 		std::cout << "Added physics object " << babyPhys.name << std::endl;
 
 		if (mb0) 
 		{ 
-			babyPhys.collider = circle{ 20.0f };
+			babyPhys.collider = circle{ 50.0f };
 		}
 		else 
 		{ 
@@ -69,14 +70,31 @@ void game::tickPhys()
 		i.tickPhys(targetFixedStep);
 	}
 
-	checkCollisions(physObjects);
-	resolveCollisions(physObjects);
-
-	for (physObject ob : physObjects)
+	for (auto& i : physObjects)
 	{
-		ob.swapCollisionLists();
+		for (auto &j : physObjects)
+		{
+			if (&i == &j) { continue; }
 
-		assert(ob.collidingObjects->size() == 0);
+			bool collision = false;
+
+			i.collider.match(
+				[i, j, &collision](circle c) 
+			{ 
+				if (checkCircleX(i.pos, c, j.pos, j.collider)) 
+				{
+					collision = true;
+				}
+			},
+				[i, j, &collision](aabb a) 
+			{
+				if (checkAABBX(i.pos, a, j.pos, j.collider)) 
+				{ collision = true; 
+				}
+			});
+
+			if (collision) { resolvePhysBodies(i, j); }
+		}
 	}
 }
 

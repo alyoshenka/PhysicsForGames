@@ -28,18 +28,20 @@ physObject::physObject()
 
 	name = "none";
 
-	isTrigger = false;
-	id = -1;
+	// isTrigger = false;
+	// id = -1;
 
 	collidingObjects = new std::vector<physObject*>();
 	prevCollidingObjects = new std::vector<physObject*>();
 }
 
+/*
 physObject::physObject(bool setAsTrigger, int initID) : physObject()
 {
 	isTrigger = setAsTrigger;
 	id = initID;
 }
+*/
 
 void physObject::tickPhys(float delta)
 {
@@ -81,6 +83,7 @@ void physObject::addVelocityChange(glm::vec2 delta)
 
 #pragma endregion ForceManipulation
 
+/*
 #pragma region InteractionEvents
 
 void physObject::onCollisionEnter(physObject collision)
@@ -278,3 +281,4 @@ collision::collision(Flag _t, physObject * _s, physObject * _o)
 	subject = _s;
 	object = _o;
 }
+*/

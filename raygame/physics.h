@@ -20,8 +20,8 @@ enum Flag
 
 class physObject
 {
-	bool isTrigger;
-	int id;
+	// bool isTrigger;
+	// int id;
 
 	// update the physics forces on the object
 	void updateForces(float delta);
@@ -33,7 +33,7 @@ public:
 	glm::vec2 forces;
 
 	physObject();
-	physObject(bool setAsTrigger, int initID);
+	// physObject(bool setAsTrigger, int initID);
 
 	float mass;
 	float drag;
@@ -57,6 +57,7 @@ public:
 	// adds an instantateous force without respect to mass
 	void addVelocityChange(glm::vec2 delta);
 
+	/*
 	void onCollisionEnter(physObject collision);
 	void onCollisionStay(physObject collision);
 	void onCollisionExit(physObject collision);
@@ -71,8 +72,10 @@ public:
 	int getID();
 
 	bool operator ==(physObject &rhs) const;
+	*/
 };
 
+/*
 // collision only works one way
 class collision
 {
@@ -82,8 +85,9 @@ public:
 	physObject *object;
 	collision(Flag _t, physObject *_s, physObject *_o);
 };
+*/
 
-void checkCollisions(std::vector<physObject>& objects);
+// void checkCollisions(std::vector<physObject>& objects);
 
-void resolveCollisions(std::vector<physObject>& objects);
+// void resolveCollisions(std::vector<physObject>& objects);
 
