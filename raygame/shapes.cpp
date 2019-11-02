@@ -36,6 +36,20 @@ bool checkCircleAABB(glm::vec2 posA, circle circ, glm::vec2 posB, aabb ab)
 	return (distX * distX + distY * distY) < (circ.radius * circ.radius);
 }
 
+bool checkCirclePoint(glm::vec2 pos, float radius, glm::vec2 point)
+{
+	float dist = glm::length(pos - point);
+	return dist < radius;
+}
+
+bool checkAABBPoint(glm::vec2 pos, aabb a, glm::vec2 point)
+{
+	return point.x > pos.x - a.halfExtents.x
+		&& point.x < pos.x + a.halfExtents.x
+		&& point.y > pos.y - a.halfExtents.y
+		&& point.y < pos.y + a.halfExtents.y;
+}
+
 bool checkCircleX(glm::vec2 posA, circle lhs, glm::vec2 posB, shape rhs)
 {
 	return rhs.match([posA, lhs, posB] (circle s) { return checkCircleCircle(posA, lhs, posB, s); },
@@ -46,6 +60,12 @@ bool checkAABBX(glm::vec2 posA, aabb lhs, glm::vec2 posB, shape rhs)
 {
 	return rhs.match([posA, lhs, posB](circle s) { return checkCircleAABB(posA, s, posB, lhs); },
 		             [posA, lhs, posB](aabb s)   { return checkAABBAABB(posA, lhs, posB, s); });
+}
+
+bool checkPointX(glm::vec2 point, glm::vec2 pos, shape rhs)
+{
+	return rhs.match([point, pos](circle s) { return checkCirclePoint(pos, s.radius, point); },
+		[point, pos](aabb s) { return checkAABBPoint(pos, s, point); });
 }
 
 void resolvePhysBodies(physObject & lhs, physObject & rhs)

@@ -4,6 +4,7 @@
 #include "mapbox/variant.hpp"
 
 #include <iostream>
+#include <cmath>
 
 game::game()
 {
@@ -15,6 +16,11 @@ game::game()
 
 	clickReset = 0.1f;
 	clickElapsed = clickReset;
+
+	currentPointerObject = nullptr;
+
+	vectorAngle = 0;
+	vectorMagnitude = 500;
 }
 
 void game::init()
@@ -34,7 +40,14 @@ void game::tick()
 
 	bool mb0 = IsMouseButtonDown(0);
 	bool mb1 = IsMouseButtonDown(1);
+	bool one = IsKeyPressed(KEY_ONE);
+	bool two = IsKeyPressed(KEY_TWO);
+	bool three = IsKeyPressed(KEY_THREE);
+	bool four = IsKeyPressed(KEY_FOUR);
+	int scrollY = GetMouseWheelMove();
 
+	auto mousePos = GetMousePosition();
+	this->mousePos = { mousePos.x, mousePos.y };
 
 	if ((mb0 || mb1) && clickElapsed > clickReset)
 	{
@@ -42,23 +55,32 @@ void game::tick()
 
 		// physObject babyPhys = physObject(false, physObjects.size() + 1);
 		physObject babyPhys;
-		auto mousePos = GetMousePosition();
 		babyPhys.pos = { mousePos.x, mousePos.y };
-		babyPhys.addForce({ 0, 5000 });
+		// babyPhys.addForce({ 0, 5000 });
 		babyPhys.name = std::to_string(physObjects.size() + 1);
-		babyPhys.collider = circle({ 50 });
+		babyPhys.collider = circle({ 30 });
 		physObjects.push_back(babyPhys);
 		std::cout << "Added physics object " << babyPhys.name << std::endl;
 
+		/*
 		if (mb0) 
 		{ 
-			babyPhys.collider = circle{ 50.0f };
+			babyPhys.collider = circle{ 40.0f };
 		}
 		else 
 		{ 
 			babyPhys.collider = aabb{ {15.0f, 15.0f} }; 
 		}
+		*/
 	}
+
+	if (one) { currentPointerObject->addForce({cos(vectorAngle) * vectorMagnitude, -sin(vectorAngle) * vectorMagnitude}); }
+	if (two) { currentPointerObject->addImpulse({ cos(vectorAngle) * vectorMagnitude, -sin(vectorAngle) * vectorMagnitude }); }
+	if (three) { currentPointerObject->addAcceleration({ cos(vectorAngle) * vectorMagnitude, -sin(vectorAngle) * vectorMagnitude }); }
+	if (four) { currentPointerObject->addVelocityChange({ cos(vectorAngle) * vectorMagnitude, -sin(vectorAngle) * vectorMagnitude }); }
+
+	if (scrollY > 0) { vectorAngle += 0.1f; }
+	else if (scrollY < 0) { vectorAngle -= 0.1f; }
 }
 
 void game::tickPhys()
@@ -95,6 +117,13 @@ void game::tickPhys()
 
 			if (collision) { resolvePhysBodies(i, j); }
 		}
+
+		if (checkPointX(mousePos, i.pos, i.collider)) 
+		{
+			i.color = RED;
+			currentPointerObject = &i;
+		}
+		else { i.color = BLUE; }
 	}
 }
 
@@ -105,6 +134,17 @@ void game::draw() const
 	BeginDrawing();
 
 	ClearBackground(RAYWHITE);
+
+	DrawText("Click mouse to add object", 10, 10, 20, GRAY);
+	DrawText("Hover over object to select", 10, 30, 20, GRAY);
+	DrawText("Press number buttons to interact", 10, 50, 20, GRAY);
+	DrawText("1: Add Force", 10, 70, 20, GRAY);
+	DrawText("2: Add Impulse", 10, 90, 20, GRAY);
+	DrawText("3: Add Acceleration", 10, 110, 20, GRAY);
+	DrawText("4: Add VelocityChange", 10, 130, 20, GRAY);
+	DrawText("Scroll mouse wheel to change direction", 10, 150, 20, GRAY);
+	std::string s = "Direction: " + std::to_string(vectorAngle * RAD2DEG);
+	DrawText(s.c_str(), 10, 170, 20, GRAY);
 
 	for (const physObject i : physObjects)
 	{

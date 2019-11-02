@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <string>
+#include "raylib.h"
 
 class collisionHandler;
 
@@ -40,6 +41,7 @@ public:
 
 	shape collider;
 	std::string name;
+	Color color;
 	std::vector<physObject*> *prevCollidingObjects;
 	std::vector<physObject*> *collidingObjects;
 

@@ -17,6 +17,11 @@ class game
 	std::vector<physObject> physObjects;
 
 public:
+	float vectorAngle; // degrees
+	float vectorMagnitude;
+	glm::vec2 mousePos;
+	physObject *currentPointerObject;
+
 	game();
 
 	void init();

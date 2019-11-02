@@ -31,6 +31,8 @@ physObject::physObject()
 	// isTrigger = false;
 	// id = -1;
 
+	color = BLUE;
+
 	collidingObjects = new std::vector<physObject*>();
 	prevCollidingObjects = new std::vector<physObject*>();
 }
@@ -57,6 +59,9 @@ void physObject::drawCollider() const
 void physObject::draw() const
 {
 	drawCollider();
+
+	collider.match([this](circle c) { if (checkCircleX(pos, c, pos, collider)) { DrawCircle(pos.x, pos.y, c.radius, color); } },
+		[this](aabb c) { if (checkAABBX(pos, c, pos, collider)) { DrawRectangle(pos.x - c.halfExtents.x, pos.y - c.halfExtents.y, c.halfExtents.x * 2, c.halfExtents.y * 2, color); } });
 }
 
 #pragma region ForceManipulation
