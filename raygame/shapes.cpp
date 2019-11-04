@@ -71,37 +71,44 @@ bool checkPointX(glm::vec2 point, glm::vec2 pos, shape rhs)
 
 void resolvePhysBodies(physObject & lhs, physObject & rhs)
 {
-	glm::vec2 resImpulses[2];
-
-	glm::vec2 normal = { 0, 0 };
-	float pen = 0.0f;
-
-	normal = lhs.collider.match(
-		[lhs, rhs, &pen](circle)
+	lhs.collider.match(
+		[lhs, rhs](circle a)
 	{
-		float dist = glm::length(lhs.pos - rhs.pos);
-		float sum = lhs.collider.get<circle>().radius + rhs.collider.get<circle>().radius;
+		rhs.collider.match(
+			[lhs, rhs, a](circle b)
+		{
+			glm::vec2 resImpulses[2];
+			glm::vec2 normal = { 0, 0 };
 
-		pen = sum - dist;
+			float pen = 0.0f; // penetration
+			float dist = glm::length(lhs.pos - rhs.pos);
+			float sum = a.radius + b.radius;
 
-		return glm::normalize(lhs.pos - rhs.pos);
+			pen = sum - dist;
+			normal = glm::normalize(lhs.pos - rhs.pos);
+
+			resolveCollisionCircleCircle(lhs.pos, lhs.vel, lhs.mass,
+				rhs.pos, rhs.vel, rhs.mass,
+				1.0f, normal, resImpulses);
+
+			glm::vec2 delta = normal * pen;
+			lhs.pos.x += delta.x;
+			lhs.pos.y += delta.y;
+			rhs.pos.x -= delta.x;
+			rhs.pos.y -= delta.y;
+
+			lhs.vel = resImpulses[0];
+			rhs.vel = resImpulses[1];
+		},
+			[lhs, rhs](aabb b)
+		{
+			assert(false && "not yet implemented");
+		});
 	},
-		[lhs, rhs, &pen](aabb a) 
+		[lhs, rhs](aabb a) 
 	{ 
 		assert(false && "not yet implemented");
-		return glm::vec2(); 
-	}
-	);
-
-	resolveCollisionCircleCircle(lhs.pos, lhs.vel, lhs.mass, 
-		             rhs.pos, rhs.vel, rhs.mass, 
-		             1.0f, normal, resImpulses);
-
-	lhs.pos += normal * pen;
-	rhs.pos -= normal * pen;
-
-	lhs.vel = resImpulses[0];
-	rhs.vel = resImpulses[1];
+	});
 }
 
 void resolveCollisionCircleCircle(glm::vec2 posA, glm::vec2 velA, float massA, 
