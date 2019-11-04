@@ -28,9 +28,6 @@ physObject::physObject()
 
 	name = "none";
 
-	// isTrigger = false;
-	// id = -1;
-
 	color = BLUE;
 
 	collidingObjects = new std::vector<physObject*>();
@@ -52,16 +49,18 @@ void physObject::tickPhys(float delta)
 
 void physObject::drawCollider() const
 {
-	collider.match([this](circle c) { if (checkCircleX(pos, c, pos, collider)) { DrawCircleLines(pos.x, pos.y, c.radius, BLACK); } },
-		           [this](aabb c)   { if (checkAABBX(pos, c, pos, collider))   { DrawRectangleLines(pos.x - c.halfExtents.x, pos.y - c.halfExtents.y, c.halfExtents.x * 2, c.halfExtents.y * 2, BLACK); } });
+	collider.match([this](circle c) { DrawCircleLines(pos.x, pos.y, c.radius, BLACK); },
+		           [this](aabb c)   { DrawRectangleLines(pos.x - c.halfExtents.x, pos.y - c.halfExtents.y, c.halfExtents.x * 2, c.halfExtents.y * 2, BLACK); });
 }
 
 void physObject::draw() const
 {
 	drawCollider();
 
-	collider.match([this](circle c) { if (checkCircleX(pos, c, pos, collider)) { DrawCircle(pos.x, pos.y, c.radius, color); } },
-		[this](aabb c) { if (checkAABBX(pos, c, pos, collider)) { DrawRectangle(pos.x - c.halfExtents.x, pos.y - c.halfExtents.y, c.halfExtents.x * 2, c.halfExtents.y * 2, color); } });
+	return;
+
+	collider.match([this](circle c) { DrawCircle(pos.x, pos.y, c.radius, color); },
+				   [this](aabb c) { DrawRectangle(pos.x - c.halfExtents.x, pos.y - c.halfExtents.y, c.halfExtents.x * 2, c.halfExtents.y * 2, color); });
 }
 
 #pragma region ForceManipulation

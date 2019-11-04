@@ -3,6 +3,7 @@
 
 #include "glm/glm.hpp"
 
+#include <algorithm>
 
 bool checkCircleCircle(glm::vec2 posA, circle circA, glm::vec2 posB, circle circB)
 {
@@ -92,7 +93,7 @@ void resolvePhysBodies(physObject & lhs, physObject & rhs)
 	}
 	);
 
-	resolveCollision(lhs.pos, lhs.vel, lhs.mass, 
+	resolveCollisionCircleCircle(lhs.pos, lhs.vel, lhs.mass, 
 		             rhs.pos, rhs.vel, rhs.mass, 
 		             1.0f, normal, resImpulses);
 
@@ -103,7 +104,7 @@ void resolvePhysBodies(physObject & lhs, physObject & rhs)
 	rhs.vel = resImpulses[1];
 }
 
-void resolveCollision(glm::vec2 posA, glm::vec2 velA, float massA, 
+void resolveCollisionCircleCircle(glm::vec2 posA, glm::vec2 velA, float massA, 
 	                  glm::vec2 posB, glm::vec2 velB, float massB, 
 	                  float elasticity, glm::vec2 normal, glm::vec2 * dst)
 {
@@ -115,4 +116,135 @@ void resolveCollision(glm::vec2 posA, glm::vec2 velA, float massA,
 
 	dst[0] = velA + (impulseMag / massA) * normal;
 	dst[1] = velB - (impulseMag / massB) * normal;
+}
+
+// THIS ASSUMES B IS NOT MOVING
+void resolveCollisionAABBAABB(aabb a, glm::vec2 posA, glm::vec2 &velA, aabb b, glm::vec2 posB, glm::vec2 &velB, float & normalx, float & normaly)
+{
+	// https://www.gamedev.net/articles/programming/general-and-gameplay-programming/swept-aabb-collision-detection-and-response-r3084
+
+	// find distance and time it takes to reach a collision on each axis
+
+	// how far away the closest edges are
+	float xInvEntry, yInvEntry;
+	// how far away the farthest edges are
+	float xInvExit, yInvExit;
+
+	// find the distance between objects on near and far sides
+	if (velA.x > 0)
+	{
+		xInvEntry = posB.x - (posA.x + a.halfExtents.x);
+		xInvExit = (posB.x + b.halfExtents.x) - posA.x;
+	}
+	else
+	{
+		xInvEntry = (posB.x + b.halfExtents.x) - posA.x;
+		xInvExit = posB.x - (posA.x + a.halfExtents.x);
+	}
+
+	if (velA.y > 0)
+	{
+		yInvEntry = posB.y - (posA.y + a.halfExtents.y);
+		yInvExit = (posB.y + b.halfExtents.y) - posA.y;
+	}
+	else
+	{
+		yInvEntry = (posB.y + b.halfExtents.y) - posA.y;
+		yInvExit = posB.y - (posA.y + a.halfExtents.y);
+	}
+
+	// find time (0-1) of collision and time (0-1) of leaving for each axis
+
+	float xEntry, yEntry;
+	float xExit, yExit;
+
+	if (velA.x == 0.0f)
+	{
+		xEntry = -std::numeric_limits<float>::infinity();
+		xExit = std::numeric_limits<float>::infinity();
+	}
+	else
+	{
+		xEntry = xInvEntry / velA.x;
+		xExit = xInvExit / velA.x;
+	}
+
+	if (velB.y == 0.0f)
+	{
+		yEntry = -std::numeric_limits<float>::infinity();
+		yExit = std::numeric_limits<float>::infinity();
+	}
+	else
+	{
+		yEntry = yInvEntry / velA.y;
+		yExit = yInvExit / velA.y;
+	}
+
+	// find which axis collided first
+	float entryTime = std::max(xEntry, yEntry); // time of collision
+	float exitTime = std::min(xEntry, yEntry);
+
+	// check to see if there was actually a collision
+	if (entryTime > exitTime || xEntry < 0 && yEntry < 0 || xEntry > 1 || yEntry > 1)
+	{
+		return;
+	}
+
+	// else resolve collision
+
+	// calculate normal of collided surface
+	float normalX, normalY;
+
+	// this is easy because aabb, but will grow in complexity with other volumes
+
+	if (xEntry > yEntry)
+	{
+		normalX = xInvEntry < 0 ? 1 : -1;
+		normalY = 0;
+	}
+	else
+	{
+		normalX = 0;
+		normalY = yInvEntry < 0 ? 1 : -1;
+	}
+
+	posA.x += velA.x * entryTime;
+	posA.y += velA.y * entryTime;
+
+	float remainingTime = 1.0f - entryTime;
+
+	// direct object in new direction
+
+	enum Response { deflect, push, slide };
+	Response desiredResponse = deflect;
+
+	switch (desiredResponse)
+	{
+	case deflect:
+		// reduce velocity by remaining time
+		velA.x *= remainingTime;
+		velB.y *= remainingTime;
+		// negate velocity on whichever axis had collision
+		if (abs(normalX) > 0.0001f) { velA.x *= -1; }
+		if (abs(normalY) > 0.0001f) { velA.y *= -1; }
+		break;
+	case push:
+		// reuses remaining velocity and pushes in direction parallel to edge
+		float magnitude = sqrt(velA.x * velA.x + velA.y * velA.y) * remainingTime;
+		float dotProd = velA.x * normalY + velA.y * normalX;
+		if (dotProd > 0.0f) { dotProd = 1; }
+		else if (dotProd < 0.0f) { dotProd = -1; }
+		velA.x = dotProd * normalY * magnitude;
+		velA.y = dotProd * normalX * magnitude;
+		break;
+	case slide:
+		// doesn't go as fast as push
+		float magnitude = sqrt(velA.x * velA.x + velA.y * velA.y) * remainingTime;
+		velA.x = dotProd * normalY;
+		velA.y = dotProd * normalX;
+		break;
+	default:
+		assert(false, "invalid collision response");
+		break;
+	}
 }

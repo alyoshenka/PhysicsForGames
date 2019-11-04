@@ -53,25 +53,13 @@ void game::tick()
 	{
 		clickElapsed = 0.0f;
 
-		// physObject babyPhys = physObject(false, physObjects.size() + 1);
 		physObject babyPhys;
 		babyPhys.pos = { mousePos.x, mousePos.y };
-		// babyPhys.addForce({ 0, 5000 });
 		babyPhys.name = std::to_string(physObjects.size() + 1);
-		babyPhys.collider = circle({ 30 });
+		if (mb0) { babyPhys.collider = circle{ 20.0f }; }
+		else { babyPhys.collider = aabb{ {15.0f, 15.0f} }; }
 		physObjects.push_back(babyPhys);
 		std::cout << "Added physics object " << babyPhys.name << std::endl;
-
-		/*
-		if (mb0) 
-		{ 
-			babyPhys.collider = circle{ 40.0f };
-		}
-		else 
-		{ 
-			babyPhys.collider = aabb{ {15.0f, 15.0f} }; 
-		}
-		*/
 	}
 
 	if (one) { currentPointerObject->addForce({cos(vectorAngle) * vectorMagnitude, -sin(vectorAngle) * vectorMagnitude}); }
