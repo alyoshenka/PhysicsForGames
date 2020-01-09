@@ -95,7 +95,7 @@ void resolvePhysBodies(physObject &lhs, physObject &rhs)
 			[&lhs, &rhs, a](aabb b) // b = aabb
 		{
 			resolveCollisionAABBAABB(a, lhs.pos, lhs.vel, 
-				                     b, rhs.pos, rhs.vel);
+				                     b, rhs.pos, rhs.vel, 1.0f / 30.0f);
 		});
 	});
 }
@@ -149,7 +149,8 @@ void resolveCollisionCircleCircle(circle a, glm::vec2 &posA, glm::vec2 & velA, f
 
 // THIS ASSUMES B IS NOT MOVING
 void resolveCollisionAABBAABB(aabb a, glm::vec2 &posA, glm::vec2 &velA, 
-	                          aabb b, glm::vec2 &posB, glm::vec2 &velB)
+	                          aabb b, glm::vec2 &posB, glm::vec2 &velB,
+	                          float timeStep)
 {
 	// https://www.gamedev.net/articles/programming/general-and-gameplay-programming/swept-aabb-collision-detection-and-response-r3084
 
@@ -188,6 +189,10 @@ void resolveCollisionAABBAABB(aabb a, glm::vec2 &posA, glm::vec2 &velA,
 		yInvExit = (posB.y - b.halfExtents.y) - (posA.y + a.halfExtents.y);
 	}
 
+	// scale by delta time?
+	// xInvEntry * timeStep;
+	// yInvEntry * timeStep;
+
 	// find time (0-1) of collision and time (0-1) of leaving for each axis
 
 	float xEntry, yEntry;
@@ -222,15 +227,7 @@ void resolveCollisionAABBAABB(aabb a, glm::vec2 &posA, glm::vec2 &velA,
 	// check to see if there was actually a collision
 
 	// this should never happen -> there was already a collision
-	if (entryTime > exitTime || xEntry < 0 && yEntry < 0 || xEntry > 1 || yEntry > 1) 
-	{ 
-		/*
-		normalX = 0;
-		normalY = 0;
-		entryTime = 1;
-		*/
-		assert(false && "there was already a collision"); 
-	}
+	if (entryTime > exitTime || xEntry < 0 && yEntry < 0 || xEntry > 1 || yEntry > 1) { return; }
 	// else resolve collision
 	else
 	{
