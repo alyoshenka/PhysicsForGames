@@ -7,6 +7,8 @@
 #include <string>
 #include "raylib.h"
 
+// collider type -> moves or doesn't move
+
 class collisionHandler;
 
 struct collision;

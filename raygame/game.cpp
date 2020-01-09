@@ -11,15 +11,15 @@ game::game()
 	targetFixedStep = 1.0f / 30.0f; // target physics tick rate
 	accumulatedFixedTime = 0.0f;
 
-	screenWidth = 800;
-	screenHeight = 450;
+	screenWidth = 300;
+	screenHeight = 300;
 
 	clickReset = 0.3f;
 	clickElapsed = clickReset;
 
 	currentPointerObject = nullptr;
 
-	vectorAngle = 0;
+	vectorAngle = PI / 2;
 	vectorMagnitude = 500;
 }
 

@@ -40,7 +40,6 @@ void resolveCollision_Old(glm::vec2 posA, glm::vec2 velA, float massA,
 void resolveCollisionCircleCircle(circle a, glm::vec2 &posA, glm::vec2 &velA, float massA,
 	                              circle b, glm::vec2 &posB, glm::vec2 &velB, float massB,
 	                              float elasticity);
-void resolveCollisionAABBAABB(aabb a, glm::vec2 posA, glm::vec2 &velA,
-							  aabb b, glm::vec2 posB, glm::vec2 &velB,
-							  float& normalx, float& normaly);
+void resolveCollisionAABBAABB(aabb a, glm::vec2 &posA, glm::vec2 &velA,
+							  aabb b, glm::vec2 &posB, glm::vec2 &velB);
 void resolveCollisionCircleAABB();
