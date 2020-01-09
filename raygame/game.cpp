@@ -14,7 +14,7 @@ game::game()
 	screenWidth = 800;
 	screenHeight = 450;
 
-	clickReset = 0.1f;
+	clickReset = 0.3f;
 	clickElapsed = clickReset;
 
 	currentPointerObject = nullptr;
@@ -62,13 +62,16 @@ void game::tick()
 		std::cout << "Added physics object " << babyPhys.name << std::endl;
 	}
 
-	if (one) { currentPointerObject->addForce({cos(vectorAngle) * vectorMagnitude, -sin(vectorAngle) * vectorMagnitude}); }
-	if (two) { currentPointerObject->addImpulse({ cos(vectorAngle) * vectorMagnitude, -sin(vectorAngle) * vectorMagnitude }); }
-	if (three) { currentPointerObject->addAcceleration({ cos(vectorAngle) * vectorMagnitude, -sin(vectorAngle) * vectorMagnitude }); }
-	if (four) { currentPointerObject->addVelocityChange({ cos(vectorAngle) * vectorMagnitude, -sin(vectorAngle) * vectorMagnitude }); }
+	glm::vec2 calculatedVecAngle{ cos(vectorAngle) * vectorMagnitude, -sin(vectorAngle) * vectorMagnitude };
+	if (one) { currentPointerObject->addForce(calculatedVecAngle); }
+	if (two) { currentPointerObject->addImpulse(calculatedVecAngle); }
+	if (three) { currentPointerObject->addAcceleration(calculatedVecAngle); }
+	if (four) { currentPointerObject->addVelocityChange(calculatedVecAngle); }
 
 	if (scrollY > 0) { vectorAngle += 0.1f; }
 	else if (scrollY < 0) { vectorAngle -= 0.1f; }
+	if (vectorAngle > 2 * PI) { vectorAngle -= (2 * PI); }
+	if (vectorAngle < 0) { vectorAngle += (2 * PI); }
 }
 
 void game::tickPhys()
@@ -91,16 +94,11 @@ void game::tickPhys()
 			i.collider.match(
 				[i, j, &collision](circle c) 
 			{ 
-				if (checkCircleX(i.pos, c, j.pos, j.collider)) 
-				{
-					collision = true;
-				}
+				collision = checkCircleX(i.pos, c, j.pos, j.collider);
 			},
 				[i, j, &collision](aabb a) 
 			{
-				if (checkAABBX(i.pos, a, j.pos, j.collider)) 
-				{ collision = true; 
-				}
+				collision = checkAABBX(i.pos, a, j.pos, j.collider);
 			});
 
 			if (collision) { resolvePhysBodies(i, j); }
@@ -157,9 +155,9 @@ void game::screenWrap()
 	for (auto& i : physObjects)
 	{
 		if (i.pos.x > screenWidth) { i.pos.x = 0; }
-		if (i.pos.x < 0) { i.pos.x = screenWidth; }
+		if (i.pos.x < 0.0f) { i.pos.x = screenWidth; }
 		if (i.pos.y > screenHeight) { i.pos.y = 0; }
-		if (i.pos.y < 0) { i.pos.y = screenHeight; }
+		if (i.pos.y < 0.0f) { i.pos.y = screenHeight; }
 	}
 }
 

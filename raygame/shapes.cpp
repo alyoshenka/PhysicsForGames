@@ -69,49 +69,41 @@ bool checkPointX(glm::vec2 point, glm::vec2 pos, shape rhs)
 		[point, pos](aabb s) { return checkAABBPoint(pos, s, point); });
 }
 
-void resolvePhysBodies(physObject & lhs, physObject & rhs)
+void resolvePhysBodies(physObject &lhs, physObject &rhs)
 {
 	lhs.collider.match(
-		[lhs, rhs](circle a)
+	[&lhs, &rhs](circle a) // a = circle
 	{
 		rhs.collider.match(
-			[lhs, rhs, a](circle b)
+			[&lhs, &rhs, a](circle b) // b = circle
 		{
-			glm::vec2 resImpulses[2];
-			glm::vec2 normal = { 0, 0 };
-
-			float pen = 0.0f; // penetration
-			float dist = glm::length(lhs.pos - rhs.pos);
-			float sum = a.radius + b.radius;
-
-			pen = sum - dist;
-			normal = glm::normalize(lhs.pos - rhs.pos);
-
-			resolveCollisionCircleCircle(lhs.pos, lhs.vel, lhs.mass,
-				rhs.pos, rhs.vel, rhs.mass,
-				1.0f, normal, resImpulses);
-
-			glm::vec2 delta = normal * pen;
-			lhs.pos.x += delta.x;
-			lhs.pos.y += delta.y;
-			rhs.pos.x -= delta.x;
-			rhs.pos.y -= delta.y;
-
-			lhs.vel = resImpulses[0];
-			rhs.vel = resImpulses[1];
+			resolveCollisionCircleCircle(a, lhs.pos, lhs.vel, lhs.mass,
+				                         b, rhs.pos, rhs.vel, rhs.mass, 1.0f);
 		},
-			[lhs, rhs](aabb b)
+			[lhs, rhs](aabb b) // b = aabb
 		{
-			assert(false && "not yet implemented");
+			resolveCollisionCircleAABB();
 		});
 	},
-		[lhs, rhs](aabb a) 
+	[&lhs, &rhs](aabb a) // a = aabb
 	{ 
-		assert(false && "not yet implemented");
+		rhs.collider.match(
+			[&lhs, &rhs, a](circle b) // b = circle
+		{
+			resolveCollisionCircleAABB();
+		},
+			[&lhs, &rhs, a](aabb b) // b = aabb
+		{
+			float nX;
+			float nY;
+			resolveCollisionAABBAABB(a, lhs.pos, lhs.vel, 
+				                     b, rhs.pos, rhs.vel, 
+				                     nX, nY);
+		});
 	});
 }
 
-void resolveCollisionCircleCircle(glm::vec2 posA, glm::vec2 velA, float massA, 
+void resolveCollision_Old(glm::vec2 posA, glm::vec2 velA, float massA, 
 	                  glm::vec2 posB, glm::vec2 velB, float massB, 
 	                  float elasticity, glm::vec2 normal, glm::vec2 * dst)
 {
@@ -125,8 +117,43 @@ void resolveCollisionCircleCircle(glm::vec2 posA, glm::vec2 velA, float massA,
 	dst[1] = velB - (impulseMag / massB) * normal;
 }
 
+void resolveCollisionCircleCircle(circle a, glm::vec2 &posA, glm::vec2 & velA, float massA, 
+	                              circle b, glm::vec2 &posB, glm::vec2 & velB, float massB, 
+	                              float elasticity)
+{
+	glm::vec2 resImpulses[2];
+	glm::vec2 normal = { 0, 0 };
+
+	float pen = 0.0f; // penetration
+	float dist = glm::length(posA - posB);
+	float sum = a.radius + b.radius;
+
+	pen = sum - dist;
+	normal = glm::normalize(posA - posB);
+
+	glm::vec2 relVel = velA - velB;
+	float impulseMag = glm::dot(-(1.0f + elasticity) * relVel, normal)
+		/ glm::dot(normal, normal * (1 / massA + 1 / massB));
+
+	impulseMag /= 2.0f;
+
+	resImpulses[0] = velA + (impulseMag / massA) * normal;
+	resImpulses[1] = velB - (impulseMag / massB) * normal;
+
+	glm::vec2 delta = normal * pen;
+	posA.x += delta.x;
+	posA.y += delta.y;
+	posB.x -= delta.x;
+	posB.y -= delta.y;
+
+	velA = resImpulses[0];
+	velB = resImpulses[1];
+}
+
 // THIS ASSUMES B IS NOT MOVING
-void resolveCollisionAABBAABB(aabb a, glm::vec2 posA, glm::vec2 &velA, aabb b, glm::vec2 posB, glm::vec2 &velB, float & normalx, float & normaly)
+void resolveCollisionAABBAABB(aabb a, glm::vec2 posA, glm::vec2 &velA, 
+	                          aabb b, glm::vec2 posB, glm::vec2 &velB, 
+	                          float &normalX, float &normalY)
 {
 	// https://www.gamedev.net/articles/programming/general-and-gameplay-programming/swept-aabb-collision-detection-and-response-r3084
 
@@ -136,12 +163,18 @@ void resolveCollisionAABBAABB(aabb a, glm::vec2 posA, glm::vec2 &velA, aabb b, g
 	float xInvEntry, yInvEntry;
 	// how far away the farthest edges are
 	float xInvExit, yInvExit;
+	// calculate relavtive velocity
+	glm::vec2 vel = velA - velB;
+
+	float eps = 0.00001f;
+
+	float orderX = (posA.x > posB.x) && velA.x + velA.y > velB.x + velB.y ? -1 : 1; // 1 if a is to the left of b
 
 	// find the distance between objects on near and far sides
-	if (velA.x > 0)
+	if (vel.x != 0)
 	{
-		xInvEntry = posB.x - (posA.x + a.halfExtents.x);
-		xInvExit = (posB.x + b.halfExtents.x) - posA.x;
+		xInvEntry = (posB.x - b.halfExtents.x * orderX) - (posA.x - a.halfExtents.x * orderX);
+		xInvExit = (posB.x + b.halfExtents.x * orderX) - (posA.x + a.halfExtents.x * orderX);
 	}
 	else
 	{
@@ -149,7 +182,7 @@ void resolveCollisionAABBAABB(aabb a, glm::vec2 posA, glm::vec2 &velA, aabb b, g
 		xInvExit = posB.x - (posA.x + a.halfExtents.x);
 	}
 
-	if (velA.y > 0)
+	if (vel.y != 0)
 	{
 		yInvEntry = posB.y - (posA.y + a.halfExtents.y);
 		yInvExit = (posB.y + b.halfExtents.y) - posA.y;
@@ -165,60 +198,63 @@ void resolveCollisionAABBAABB(aabb a, glm::vec2 posA, glm::vec2 &velA, aabb b, g
 	float xEntry, yEntry;
 	float xExit, yExit;
 
-	if (velA.x == 0.0f)
+	if (abs(vel.x) < eps)
 	{
 		xEntry = -std::numeric_limits<float>::infinity();
 		xExit = std::numeric_limits<float>::infinity();
 	}
 	else
 	{
-		xEntry = xInvEntry / velA.x;
-		xExit = xInvExit / velA.x;
+		xEntry = abs(xInvEntry / vel.x);
+		xExit = abs(xInvExit / vel.x);
 	}
 
-	if (velB.y == 0.0f)
+	if (abs(vel.y) < eps)
 	{
 		yEntry = -std::numeric_limits<float>::infinity();
 		yExit = std::numeric_limits<float>::infinity();
 	}
 	else
 	{
-		yEntry = yInvEntry / velA.y;
-		yExit = yInvExit / velA.y;
+		yEntry = abs(yInvEntry / vel.y);
+		yExit = abs(yInvExit / vel.y);
 	}
 
 	// find which axis collided first
 	float entryTime = std::max(xEntry, yEntry); // time of collision
-	float exitTime = std::min(xEntry, yEntry);
+	float exitTime = std::min(xExit, yExit);
 
 	// check to see if there was actually a collision
-	if (entryTime > exitTime || xEntry < 0 && yEntry < 0 || xEntry > 1 || yEntry > 1)
-	{
-		return;
-	}
-
-	// else resolve collision
-
-	// calculate normal of collided surface
-	float normalX, normalY;
-
-	// this is easy because aabb, but will grow in complexity with other volumes
-
-	if (xEntry > yEntry)
-	{
-		normalX = xInvEntry < 0 ? 1 : -1;
+	if (entryTime > exitTime || xEntry < 0 && yEntry < 0 || xEntry > 1 || yEntry > 1) 
+	{ 
+		normalX = 0;
 		normalY = 0;
+		entryTime = 1;
 	}
+	// else resolve collision
 	else
 	{
-		normalX = 0;
-		normalY = yInvEntry < 0 ? 1 : -1;
+        // calculate normal of collided surface
+        // this is easy because aabb, but will grow in complexity with other volumes
+
+		if (xEntry > yEntry)
+		{
+			normalX = xInvEntry < 0.0f ? 1.0f : -1.0f;
+			normalY = 0;
+		}
+		else
+		{
+			normalX = 0;
+			normalY = yInvEntry < 0.0f ? 1.0f : -1.0f;
+		}
 	}
 
-	posA.x += velA.x * entryTime;
-	posA.y += velA.y * entryTime;
+	posA.x += vel.x * entryTime;
+	posA.y += vel.y * entryTime;
 
 	float remainingTime = 1.0f - entryTime;
+	float magnitude = sqrt(vel.x * vel.x + vel.y * vel.y) * remainingTime;
+	float dotProd = vel.x * normalY + velA.y * normalX;
 
 	// direct object in new direction
 
@@ -230,15 +266,23 @@ void resolveCollisionAABBAABB(aabb a, glm::vec2 posA, glm::vec2 &velA, aabb b, g
 	case deflect:
 		// reduce velocity by remaining time
 		velA.x *= remainingTime;
+		velA.y *= remainingTime;
+		velB.x *= remainingTime;
 		velB.y *= remainingTime;
 		// negate velocity on whichever axis had collision
-		if (abs(normalX) > 0.0001f) { velA.x *= -1; }
-		if (abs(normalY) > 0.0001f) { velA.y *= -1; }
+		if (abs(normalX) > eps) 		
+		{ 
+			velA.x *= normalX; 
+			velB.x *= normalX;
+		}
+		if (abs(normalY) > eps) 
+		{ 
+			velA.y *= -1; 
+			velB.y *= -1;
+		}
 		break;
 	case push:
 		// reuses remaining velocity and pushes in direction parallel to edge
-		float magnitude = sqrt(velA.x * velA.x + velA.y * velA.y) * remainingTime;
-		float dotProd = velA.x * normalY + velA.y * normalX;
 		if (dotProd > 0.0f) { dotProd = 1; }
 		else if (dotProd < 0.0f) { dotProd = -1; }
 		velA.x = dotProd * normalY * magnitude;
@@ -246,7 +290,6 @@ void resolveCollisionAABBAABB(aabb a, glm::vec2 posA, glm::vec2 &velA, aabb b, g
 		break;
 	case slide:
 		// doesn't go as fast as push
-		float magnitude = sqrt(velA.x * velA.x + velA.y * velA.y) * remainingTime;
 		velA.x = dotProd * normalY;
 		velA.y = dotProd * normalX;
 		break;
@@ -254,4 +297,9 @@ void resolveCollisionAABBAABB(aabb a, glm::vec2 posA, glm::vec2 &velA, aabb b, g
 		assert(false, "invalid collision response");
 		break;
 	}
+}
+
+void resolveCollisionCircleAABB()
+{
+	assert(false && "not yet implemented");
 }

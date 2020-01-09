@@ -33,11 +33,14 @@ bool checkCircleX(glm::vec2 posA, circle lhs, glm::vec2 posB, shape rhs);
 bool checkAABBX(glm::vec2 posA, aabb lhs, glm::vec2 posB, shape rhs);
 bool checkPointX(glm::vec2 point, glm::vec2 pos, shape rhs);
 
-// WHY IS THIS LABELED CLASS?
 void resolvePhysBodies(class physObject& lhs, class physObject& rhs);
-void resolveCollisionCircleCircle(glm::vec2 posA, glm::vec2 velA, float massA,
-	                  glm::vec2 posB, glm::vec2 velB, float massB,
-	                  float elasticity, glm::vec2 normal, glm::vec2* dst);
+void resolveCollision_Old(glm::vec2 posA, glm::vec2 velA, float massA,
+	                      glm::vec2 posB, glm::vec2 velB, float massB,
+	                      float elasticity, glm::vec2 normal, glm::vec2* dst);
+void resolveCollisionCircleCircle(circle a, glm::vec2 &posA, glm::vec2 &velA, float massA,
+	                              circle b, glm::vec2 &posB, glm::vec2 &velB, float massB,
+	                              float elasticity);
 void resolveCollisionAABBAABB(aabb a, glm::vec2 posA, glm::vec2 &velA,
 							  aabb b, glm::vec2 posB, glm::vec2 &velB,
 							  float& normalx, float& normaly);
+void resolveCollisionCircleAABB();
