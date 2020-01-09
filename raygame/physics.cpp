@@ -57,8 +57,6 @@ void physObject::draw() const
 {
 	drawCollider();
 
-	return;
-
 	collider.match([this](circle c) { DrawCircle(pos.x, pos.y, c.radius, color); },
 				   [this](aabb c) { DrawRectangle(pos.x - c.halfExtents.x, pos.y - c.halfExtents.y, c.halfExtents.x * 2, c.halfExtents.y * 2, color); });
 }

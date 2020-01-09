@@ -19,8 +19,9 @@ game::game()
 
 	currentPointerObject = nullptr;
 
-	vectorAngle = PI / 2;
+	vectorAngle = 0;
 	vectorMagnitude = 500;
+	mouseScroll = 2 * PI / 36;
 }
 
 void game::init()
@@ -63,13 +64,16 @@ void game::tick()
 	}
 
 	glm::vec2 calculatedVecAngle{ cos(vectorAngle) * vectorMagnitude, -sin(vectorAngle) * vectorMagnitude };
-	if (one) { currentPointerObject->addForce(calculatedVecAngle); }
-	if (two) { currentPointerObject->addImpulse(calculatedVecAngle); }
-	if (three) { currentPointerObject->addAcceleration(calculatedVecAngle); }
-	if (four) { currentPointerObject->addVelocityChange(calculatedVecAngle); }
+	if (nullptr != currentPointerObject)
+	{
+		if (one) { currentPointerObject->addForce(calculatedVecAngle); }
+		if (two) { currentPointerObject->addImpulse(calculatedVecAngle); }
+		if (three) { currentPointerObject->addAcceleration(calculatedVecAngle); }
+		if (four) { currentPointerObject->addVelocityChange(calculatedVecAngle); }
+	}
 
-	if (scrollY > 0) { vectorAngle += 0.1f; }
-	else if (scrollY < 0) { vectorAngle -= 0.1f; }
+	if (scrollY > 0) { vectorAngle += mouseScroll; }
+	else if (scrollY < 0) { vectorAngle -= mouseScroll; }
 	if (vectorAngle > 2 * PI) { vectorAngle -= (2 * PI); }
 	if (vectorAngle < 0) { vectorAngle += (2 * PI); }
 }
@@ -92,11 +96,11 @@ void game::tickPhys()
 			bool collision = false;
 
 			i.collider.match(
-				[i, j, &collision](circle c) 
+			[i, j, &collision](circle c) 
 			{ 
 				collision = checkCircleX(i.pos, c, j.pos, j.collider);
 			},
-				[i, j, &collision](aabb a) 
+			[i, j, &collision](aabb a) 
 			{
 				collision = checkAABBX(i.pos, a, j.pos, j.collider);
 			});
@@ -109,7 +113,10 @@ void game::tickPhys()
 			i.color = RED;
 			currentPointerObject = &i;
 		}
-		else { i.color = BLUE; }
+		else 
+		{ 
+			i.color = { 0, 0, 0, 0 }; 
+		}
 	}
 }
 

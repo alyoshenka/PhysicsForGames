@@ -4,6 +4,7 @@
 #include "glm/glm.hpp"
 
 #include <algorithm>
+#include <iostream>
 
 bool checkCircleCircle(glm::vec2 posA, circle circA, glm::vec2 posB, circle circB)
 {
@@ -163,8 +164,9 @@ void resolveCollisionAABBAABB(aabb a, glm::vec2 &posA, glm::vec2 &velA,
 	glm::vec2 normal;
 	// calculate relavtive velocity
 	glm::vec2 vel = velA - velB;
+	vel.y *= -1;
 
-	float eps = 0.0001f;
+	float eps = 0.001f;
 
 	// find the distance between objects on near and far sides
 	if (vel.x != 0)
@@ -227,7 +229,11 @@ void resolveCollisionAABBAABB(aabb a, glm::vec2 &posA, glm::vec2 &velA,
 	// check to see if there was actually a collision
 
 	// this should never happen -> there was already a collision
-	if (entryTime > exitTime || xEntry < 0 && yEntry < 0 || xEntry > 1 || yEntry > 1) { return; }
+	if (entryTime > exitTime || xEntry < 0 && yEntry < 0 || xEntry > 1 || yEntry > 1)
+	{ 
+		std::cout << entryTime << " -> " << exitTime << std::endl;
+		return; 
+	}
 	// else resolve collision
 	else
 	{
