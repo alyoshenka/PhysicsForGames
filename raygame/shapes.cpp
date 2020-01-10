@@ -96,7 +96,7 @@ void resolvePhysBodies(physObject &lhs, physObject &rhs)
 			[&lhs, &rhs, a](aabb b) // b = aabb
 		{
 			resolveCollisionAABBAABB(a, lhs.pos, lhs.vel, 
-				                     b, rhs.pos, rhs.vel, 1.0f / 30.0f);
+				                     b, rhs.pos, rhs.vel, 30.0f);
 		});
 	});
 }
@@ -161,10 +161,16 @@ void resolveCollisionAABBAABB(aabb a, glm::vec2 &posA, glm::vec2 &velA,
 	float xInvEntry, yInvEntry;
 	// how far away the farthest edges are
 	float xInvExit, yInvExit;
-	glm::vec2 normal;
+	glm::vec2 normal{ 0, 0 };
 	// calculate relavtive velocity
 	glm::vec2 vel = velA - velB;
-	vel.y *= -1;
+	
+	int rX = 1;
+	if (posA.x > posB.x) { rX = -1; }
+	vel.x *= rX;
+	int rY = 1;
+	if (posA.y > posB.y) { rY = -1; }
+	vel.y *= rY;
 
 	float eps = 0.001f;
 
@@ -207,8 +213,8 @@ void resolveCollisionAABBAABB(aabb a, glm::vec2 &posA, glm::vec2 &velA,
 	}
 	else
 	{
-		xEntry = abs(xInvEntry / vel.x);
-		xExit = abs(xInvExit / vel.x);
+		xEntry = xInvEntry / vel.x;
+		xExit = xInvExit / vel.x;
 	}
 
 	if (abs(vel.y) < eps)
@@ -218,8 +224,8 @@ void resolveCollisionAABBAABB(aabb a, glm::vec2 &posA, glm::vec2 &velA,
 	}
 	else
 	{
-		yEntry = abs(yInvEntry / vel.y);
-		yExit = abs(yInvExit / vel.y);
+		yEntry = yInvEntry / vel.y;
+		yExit = yInvExit / vel.y;
 	}
 
 	// find which axis collided first
@@ -229,9 +235,9 @@ void resolveCollisionAABBAABB(aabb a, glm::vec2 &posA, glm::vec2 &velA,
 	// check to see if there was actually a collision
 
 	// this should never happen -> there was already a collision
-	if (entryTime > exitTime || xEntry < 0 && yEntry < 0 || xEntry > 1 || yEntry > 1)
+	if (entryTime > exitTime || xEntry * rX < 0 && yEntry * rY < 0 || xEntry > timeStep || yEntry > timeStep)
 	{ 
-		std::cout << entryTime << " -> " << exitTime << std::endl;
+		std::cout << entryTime << " -> " << exitTime << ", " << xEntry << " -> " << yEntry << std::endl;
 		return; 
 	}
 	// else resolve collision
@@ -257,10 +263,10 @@ void resolveCollisionAABBAABB(aabb a, glm::vec2 &posA, glm::vec2 &velA,
 	// displace
 
 	// TO DO: displace in porportion to velocity(?)
-	posA.x -= vel.x * entryTime;
-	posA.y -= vel.y * entryTime;
-	posB.x += vel.x * entryTime;
-	posB.y += vel.y * entryTime;
+	posA.x -= vel.x * entryTime / timeStep;
+	posA.y -= vel.y * entryTime / timeStep;
+	posB.x += vel.x * entryTime / timeStep;
+	posB.y += vel.y * entryTime / timeStep;
 
 	float remainingTime = 1.0f - entryTime;
 	float magnitude = sqrt(vel.x * vel.x + vel.y * vel.y) * remainingTime;
@@ -275,10 +281,10 @@ void resolveCollisionAABBAABB(aabb a, glm::vec2 &posA, glm::vec2 &velA,
 	{
 	case deflect:
 		// reduce velocity by remaining time
-		velA.x *= remainingTime;
-		velB.y *= -remainingTime;
-		velB.x *= remainingTime;
-		velB.y *= -remainingTime;
+		velA.x *= remainingTime / timeStep;
+		velB.y *= remainingTime / timeStep;
+		velB.x *= remainingTime / timeStep;
+		velB.y *= remainingTime / timeStep;
 
 		// negate velocity on whichever axis had collision
 		if (abs(normal.x) > eps) 		
