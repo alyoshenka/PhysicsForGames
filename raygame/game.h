@@ -20,6 +20,7 @@ public:
 	float vectorAngle; // degrees
 	float vectorMagnitude;
 	float mouseScroll;
+	int recSize;
 	glm::vec2 mousePos;
 	physObject *currentPointerObject;
 

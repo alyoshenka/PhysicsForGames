@@ -22,6 +22,8 @@ game::game()
 	vectorAngle = 0;
 	vectorMagnitude = 500;
 	mouseScroll = 2 * PI / 36;
+
+	recSize = 16;
 }
 
 void game::init()
@@ -58,7 +60,7 @@ void game::tick()
 		babyPhys.pos = { mousePos.x, mousePos.y };
 		babyPhys.name = std::to_string(physObjects.size() + 1);
 		if (mb0) { babyPhys.collider = circle{ 20.0f }; }
-		else { babyPhys.collider = aabb{ {15.0f, 15.0f} }; }
+		else { babyPhys.collider = aabb{ {recSize, recSize} }; }
 		physObjects.push_back(babyPhys);
 		std::cout << "Added physics object " << babyPhys.name << std::endl;
 	}
@@ -72,8 +74,8 @@ void game::tick()
 		if (four) { currentPointerObject->addVelocityChange(calculatedVecAngle); }
 	}
 
-	if (scrollY > 0) { vectorAngle += mouseScroll; }
-	else if (scrollY < 0) { vectorAngle -= mouseScroll; }
+	if (scrollY > 0) { /*vectorAngle += mouseScroll;*/ recSize ++; }
+	else if (scrollY < 0) { /*vectorAngle -= mouseScroll;*/ recSize --; }
 	if (vectorAngle > 2 * PI) { vectorAngle -= (2 * PI); }
 	if (vectorAngle < 0) { vectorAngle += (2 * PI); }
 }

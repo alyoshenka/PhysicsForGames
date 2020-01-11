@@ -148,11 +148,45 @@ void resolveCollisionCircleCircle(circle a, glm::vec2 &posA, glm::vec2 & velA, f
 	velB = resImpulses[1];
 }
 
-// THIS ASSUMES B IS NOT MOVING
 void resolveCollisionAABBAABB(aabb a, glm::vec2 &posA, glm::vec2 &velA, 
 	                          aabb b, glm::vec2 &posB, glm::vec2 &velB,
 	                          float timeStep)
 {
+	// there is a collision
+
+	// find how far the boxes overlap
+
+	int aIsOnLeft = posA.x <= posB.x ? 1 : -1;
+	int aIsOnTop = posA.y >= posB.y ? 1 : -1;
+	float eps = 0.001f;
+
+	float xOverlap = aIsOnLeft * ((posA.x + a.halfExtents.x * aIsOnLeft) - (posB.x - b.halfExtents.x * aIsOnLeft));
+	float yOverlap = aIsOnTop * ((posA.y + a.halfExtents.y * aIsOnTop) - (posB.y + b.halfExtents.y * aIsOnTop));
+
+	bool moveAlongX = (abs(yOverlap) < eps || abs(xOverlap) < abs(yOverlap))
+		&& abs(velA.x - velB.x) < eps
+		&& abs(velA.y - velB.y) < eps;
+
+	if (moveAlongX)
+	{
+		posA.x -= xOverlap / 2.0f;
+		posB.x += xOverlap / 2.0f;
+	}
+	else
+	{
+		posA.y -= yOverlap / 2.0f;
+		posB.y += yOverlap / 2.0f;
+	}
+
+	velA.x = velB.x = velA.y = velB.y = 0;
+
+	// undo box overlap -> reset positions
+
+	// deflect velocity, with respect to mass
+
+	/*
+	// below is swept algorithm so volumes dont skip through each other
+
 	// https://www.gamedev.net/articles/programming/general-and-gameplay-programming/swept-aabb-collision-detection-and-response-r3084
 
 	// find distance and time it takes to reach a collision on each axis
@@ -164,6 +198,7 @@ void resolveCollisionAABBAABB(aabb a, glm::vec2 &posA, glm::vec2 &velA,
 	glm::vec2 normal{ 0, 0 };
 	// calculate relavtive velocity
 	glm::vec2 vel = velA - velB;
+	vel /= timeStep;
 	
 	int rX = 1;
 	if (posA.x > posB.x) { rX = -1; }
@@ -196,10 +231,6 @@ void resolveCollisionAABBAABB(aabb a, glm::vec2 &posA, glm::vec2 &velA,
 		yInvEntry = (posB.y + b.halfExtents.y) - (posA.y - a.halfExtents.y);
 		yInvExit = (posB.y - b.halfExtents.y) - (posA.y + a.halfExtents.y);
 	}
-
-	// scale by delta time?
-	// xInvEntry * timeStep;
-	// yInvEntry * timeStep;
 
 	// find time (0-1) of collision and time (0-1) of leaving for each axis
 
@@ -314,6 +345,7 @@ void resolveCollisionAABBAABB(aabb a, glm::vec2 &posA, glm::vec2 &velA,
 		assert(false, "invalid collision response");
 		break;
 	}
+	*/
 }
 
 void resolveCollisionCircleAABB()
