@@ -43,4 +43,5 @@ void resolveCollisionCircleCircle(circle a, glm::vec2 &posA, glm::vec2 &velA, fl
 void resolveCollisionAABBAABB(aabb a, glm::vec2 &posA, glm::vec2 &velA,
 							  aabb b, glm::vec2 &posB, glm::vec2 &velB,
 	                          float timeStep);
-void resolveCollisionCircleAABB();
+void resolveCollisionCircleAABB(circle circ, glm::vec2 &posA, glm::vec2 &velA,
+	                            aabb ab, glm::vec2 &posB, glm::vec2 &velB);

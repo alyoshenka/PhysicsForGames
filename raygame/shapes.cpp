@@ -73,30 +73,32 @@ bool checkPointX(glm::vec2 point, glm::vec2 pos, shape rhs)
 void resolvePhysBodies(physObject &lhs, physObject &rhs)
 {
 	lhs.collider.match(
-	[&lhs, &rhs](circle a) // a = circle
+	[&lhs, &rhs](circle circA) // a = circle
 	{
 		rhs.collider.match(
-			[&lhs, &rhs, a](circle b) // b = circle
+			[&lhs, &rhs, circA](circle circB) // b = circle
 		{
-			resolveCollisionCircleCircle(a, lhs.pos, lhs.vel, lhs.mass,
-				                         b, rhs.pos, rhs.vel, rhs.mass, 1.0f);
+			resolveCollisionCircleCircle(circA, lhs.pos, lhs.vel, lhs.mass,
+				                         circB, rhs.pos, rhs.vel, rhs.mass, 1.0f);
 		},
-			[lhs, rhs](aabb b) // b = aabb
+			[&lhs, &rhs, circA](aabb ab) // b = aabb
 		{
-			resolveCollisionCircleAABB();
+			resolveCollisionCircleAABB(circA, lhs.pos, lhs.vel, 
+				                       ab, rhs.pos, rhs.vel); // check order
 		});
 	},
-	[&lhs, &rhs](aabb a) // a = aabb
+	[&lhs, &rhs](aabb ab) // a = aabb
 	{ 
 		rhs.collider.match(
-			[&lhs, &rhs, a](circle b) // b = circle
+			[&lhs, &rhs, ab](circle circ) // b = circle
 		{
-			resolveCollisionCircleAABB();
+			resolveCollisionCircleAABB(circ, rhs.pos, rhs.vel, 
+				                       ab, lhs.pos, lhs.vel); // check order
 		},
-			[&lhs, &rhs, a](aabb b) // b = aabb
+			[&lhs, &rhs, ab](aabb aabbB) // b = aabb
 		{
-			resolveCollisionAABBAABB(a, lhs.pos, lhs.vel, 
-				                     b, rhs.pos, rhs.vel, 30.0f);
+			resolveCollisionAABBAABB(ab, lhs.pos, lhs.vel, 
+				                     aabbB, rhs.pos, rhs.vel, 30.0f);
 		});
 	});
 }
@@ -348,7 +350,29 @@ void resolveCollisionAABBAABB(aabb a, glm::vec2 &posA, glm::vec2 &velA,
 	*/
 }
 
-void resolveCollisionCircleAABB()
+void resolveCollisionCircleAABB(circle c, glm::vec2 &posA, glm::vec2 &velA,
+	                            aabb ab, glm::vec2 &posB, glm::vec2 &velB)
 {
-	assert(false && "not yet implemented");
+	// what is point on aabb closes to circle
+	// is that point inside circle
+
+	float distX = posA.x - glm::clamp(posA.x, posB.x - ab.halfExtents.x, posB.x + ab.halfExtents.x);
+	float distY = posA.y - glm::clamp(posA.y, posB.y - ab.halfExtents.y, posB.y + ab.halfExtents.y);
+
+	int cOnLeft = posA.x <= posB.x ? 1 : -1;
+	int cOnTop = posA.y <= posB.y ? 1 : -1;
+
+	posA.x -= distX / 2.0f * cOnLeft;
+	posB.x += distX / 2.0f * cOnLeft;
+	posA.y -= distY / 2.0f * cOnTop;
+	posB.y += distY / 2.0f * cOnTop;
+
+	float eps = 0.001f;
+	if (abs(distX) < eps || abs(distY) < eps)
+	{
+		std::cout << "a: " << posA.x << ", " << posA.y << std::endl;
+		std::cout << "b: " << posB.x << ", " << posB.y << std::endl;
+	}
+
+	velA.x = velA.y = velB.x = velB.y = 0;
 }
